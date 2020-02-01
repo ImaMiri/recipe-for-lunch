@@ -12,11 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -55,7 +53,7 @@ public class RecipeService {
                     AtomicBoolean addVal = new AtomicBoolean(true);
                     Arrays.stream(recipe.getIngredients()).forEach(ingredient -> {
                         ingredients.stream().filter(ing -> ing.getTitle().equals(ingredient)).filter(ing ->
-                                ing.getUseBy().compareTo(OffsetDateTime.now().toString()) < 0).map(
+                                compareDates(ing.getUseBy()) < 0).map(
                                 ing -> false).forEachOrdered(addVal::set);
                     });
                     if (addVal.get()) {
@@ -87,9 +85,9 @@ public class RecipeService {
         AtomicInteger flag = new AtomicInteger();
         Arrays.stream(ings).forEachOrdered(i -> {
             ingredients.forEach(ing -> {
-                if (i.equals(ing.getTitle()) && ing.getBestBefore().compareTo(OffsetDateTime.now().toString()) < 0) {
+                if (i.equals(ing.getTitle()) && compareDates(ing.getBestBefore()) < 0) {
                     flag.set(-1);
-                } else if (i.equals(ing.getTitle()) && ing.getBestBefore().compareTo(OffsetDateTime.now().toString()) > 0) {
+                } else if (i.equals(ing.getTitle()) && compareDates(ing.getBestBefore()) > 0) {
                     flag.set(1);
                 }
             });
@@ -97,4 +95,14 @@ public class RecipeService {
         return flag.get();
     }
 
+    private int compareDates(String input) {
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+        try {
+            Date date = formatter.parse(input);
+            return date.compareTo(new Date());
+        } catch (ParseException e) {
+            LOG.error("There is an error while comparing date,", e);
+            return -2;
+        }
+    }
 }
